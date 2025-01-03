@@ -1,0 +1,197 @@
+name: publishing-workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      remove_deployment:
+        type: boolean
+        description: "Remove Deployment"
+        required: true
+        default: true
+  pull_request:
+    branches:
+      - "main"
+
+permissions:
+  id-token: write
+  contents: read
+  statuses: write
+
+env:
+  moduleTestSubDir: "tests/e2e/defaults"
+  moduleTestFileName: "main.test.bicep"
+  elementsRootFolder: "elements/res"
+  CURRENT_BRANCH_NAME: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
+
+jobs:
+  Check-Status:
+    runs-on: ubuntu-latest
+    environment: sandbox
+    steps:
+      - name: Check Job Statuses
+        id: check
+        run: |
+          # Determine the branch path
+          BRANCH_PATH="$CURRENT_BRANCH_NAME"
+          echo "BRANCH_PATH=$BRANCH_PATH"
+
+          # Check if the branch starts with "ci/" or "CI/"
+          if [[ "$BRANCH_PATH" == ci/* || "$BRANCH_PATH" == CI/* || "$BRANCH_PATH" == dependabot/* ]]; then
+            echo "skip_steps=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip_steps=false" >> "$GITHUB_OUTPUT"
+          fi
+    outputs:
+      skip_steps: ${{ steps.check.outputs.skip_steps }}
+
+  Test-Deployment:
+    needs:
+      - Check-Status
+    if: needs.Check-Status.outputs.skip_steps != 'true'
+    runs-on: ubuntu-latest
+    environment: sandbox
+    steps:
+      - name: Checkout the feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CURRENT_BRANCH_NAME }}
+      - name: Define inputs
+        id: define_inputs
+        shell: pwsh
+        run: |
+          # Split the branch name into module name and version
+          $moduleParts = "${{ env.CURRENT_BRANCH_NAME }}" -split '/'
+          # Module name
+          $moduleName = "$($moduleParts[0])/$($moduleParts[1])"
+          # Set the outputs
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "module_name=$moduleName"
+      - name: Deploy Bicep Test E2E Defaults
+        id: deploy_bicep
+        uses: ./.github/actions/templates/deploy
+        with:
+          module_name: "${{ steps.define_inputs.outputs.module_name }}"
+          test_subdir: "${{ env.moduleTestSubDir }}"
+          file_name: "${{ env.moduleTestFileName }}"
+          region: ${{ vars.AZURE_RESOURCE_REGION }}
+          namePrefix: ${{ vars.AZURE_RESOURCE_PREFIX }}
+          azure_client_id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure_tenant_id: ${{ secrets.AZURE_TENANT_ID }}
+          azure_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+  Remove-Deployment:
+    needs:
+      - Check-Status
+      - Test-Deployment
+    if: ${{ needs.Check-Status.outputs.skip_steps != 'true' }}
+    runs-on: ubuntu-latest
+    environment: sandbox
+    steps:
+      - name: Checkout the feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CURRENT_BRANCH_NAME }}
+      - name: Define inputs
+        id: define_inputs
+        shell: pwsh
+        run: |
+          # Split the branch name into module name and version
+          $moduleParts = "${{ env.CURRENT_BRANCH_NAME }}" -split '/'
+          # Module name
+          $moduleName = "$($moduleParts[0])/$($moduleParts[1])"
+          # Set the outputs
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "module_name=$moduleName"
+      - name: Remove Deployment
+        if: ${{ github.event_name == 'pull_request' || inputs.remove_deployment == true  }}
+        uses: ./.github/actions/templates/remove
+        with:
+          module_name: ${{ steps.define_inputs.outputs.module_name }}
+          namePrefix: ${{ vars.AZURE_RESOURCE_PREFIX }}
+          azure_client_id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure_tenant_id: ${{ secrets.AZURE_TENANT_ID }}
+          azure_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+  Publish-Deployment:
+    needs:
+      - Check-Status
+      - Remove-Deployment
+    if: needs.Check-Status.outputs.skip_steps != 'true'
+    runs-on: ubuntu-latest
+    environment: sandbox
+    steps:
+      - name: Checkout the feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CURRENT_BRANCH_NAME }}
+      - name: Define inputs
+        id: define_inputs
+        shell: pwsh
+        run: |
+          # Split the branch name into module name and version
+          $moduleParts = "${{ env.CURRENT_BRANCH_NAME }}" -split '/'
+          # Remove patch version
+          $versionParts = $moduleParts[2] -split '\.'
+          $majorVersion = [int]$versionParts[0]
+          $minorVersion = [int]$versionParts[1]
+          $patchVersion = [int]$versionParts[2]
+          $version = "$majorVersion.$minorVersion.$patchVersion"
+          # Module name
+          $moduleName = "$($moduleParts[0])/$($moduleParts[1])"
+          # Set the outputs
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "module_name=$moduleName"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "version=$version"
+      - name: Publish Bicep Modules to ACR
+        uses: ./.github/actions/templates/publish
+        with:
+          acr_name: ${{ vars.BICEP_ACR_NAME}}
+          base_module_path: ${{ env.elementsRootFolder}}/${{ steps.define_inputs.outputs.module_name }}
+          version: ${{ steps.define_inputs.outputs.version }}
+          azure_client_id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure_tenant_id: ${{ secrets.AZURE_TENANT_ID }}
+          azure_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+  Report-Status:
+    if: always()
+    needs:
+      - Check-Status
+      - Test-Deployment
+      - Remove-Deployment
+      - Publish-Deployment
+    runs-on: ubuntu-latest
+    environment: sandbox
+    steps:
+      - name: Check Job Statuses
+        run: |
+          # Check if any of the required jobs failed
+          CHECK_STATUS=${{ needs.Check-Status.result }}
+          TEST_DEPLOYMENT_STATUS=${{ needs.Test-Deployment.result }}
+          REMOVE_DEPLOYMENT_STATUS=${{ needs.Remove-Deployment.result }}
+          PUBLISH_DEPLOYMENT_STATUS=${{ needs.Publish-Deployment.result }}
+
+          echo "CHECK STATUS Job Status: $CHECK_STATUS"
+          echo "TEST DEPLOYMENT Job Status: $TEST_DEPLOYMENT_STATUS"
+          echo "REMOVE DEPLOYMENT Job Status: $REMOVE_DEPLOYMENT_STATUS"
+          echo "PUBLISH DEPLOYMENT Job Status: $PUBLISH_DEPLOYMENT_STATUS"
+
+          if [[ "$CHECK_STATUS" != "success" && "$PRE_CHECK_STATUS" != "skipped" ]]; then
+            echo "CHECK STATUS job failed."
+            exit 1
+          fi
+
+          if [[ "$TEST_DEPLOYMENT_STATUS" != "success" && "$TEST_DEPLOYMENT_STATUS" != "skipped" ]]; then
+            echo "TEST DEPLOYMENT job failed."
+            exit 1
+          fi
+
+          if [[ "$REMOVE_DEPLOYMENT_STATUS" != "success" && "$REMOVE_DEPLOYMENT_STATUS" != "skipped" ]]; then
+            echo "REMOVE DEPLOYMENT job failed."
+            exit 1
+          fi
+
+          if [[ "$PUBLISH_DEPLOYMENT_STATUS" != "success" && "$PUBLISH_DEPLOYMENT_STATUS" != "skipped" ]]; then
+            echo "PUBLISH DEPLOYMENT job failed."
+            exit 1
+          fi
+
+          echo "All checks completed successfully."
+
+

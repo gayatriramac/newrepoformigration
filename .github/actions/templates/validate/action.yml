@@ -1,0 +1,54 @@
+name: "Validate Bicep Template - What-IF"
+description: "Deploy a Bicep template to Azure and output the resource group name"
+
+inputs:
+  module_name:
+    description: "Specify the module path (e.g., avm/res/network/network-security-group)"
+    required: true
+  test_subdir:
+    description: "Specify the test subdirectory (e.g., tests/e2e/defaults)"
+    required: true
+  file_name:
+    description: "Specify the Bicep file name"
+    required: true
+    default: "main.test.bicep"
+  region:
+    description: "Deployment region (e.g., westeurope)"
+    required: false
+    default: "westeurope"
+  namePrefix:
+    description: "Name prefix for the resources"
+    required: false
+    default: "prxsbx"
+  azure_client_id:
+    description: "Az Auth: Azure client ID"
+    required: true
+  azure_tenant_id:
+    description: "Az Auth: Azure tenant ID"
+    required: true
+  azure_subscription_id:
+    description: "Az Auth: Azure subscription ID"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Login to Azure
+      uses: azure/login@v2
+      with:
+        client-id: ${{ inputs.azure_client_id }}
+        tenant-id: ${{ inputs.azure_tenant_id }}
+        subscription-id: ${{ inputs.azure_subscription_id }}
+        enable-AzPSSession: true
+
+    - name: Validate Bicep Template with What-IF
+      id: validate_bicep
+      shell: pwsh
+      run: |
+        # Generate the resource group name
+        $resourceGroupName = "dep-${{ inputs.namePrefix }}-${{ inputs.region }}-rg"
+        Write-Output "Temp. Resource Group Name: $resourceGroupName"
+
+        $templatePath = "${{ github.workspace }}/elements/res/${{ inputs.module_name }}/${{ inputs.test_subdir }}/${{ inputs.file_name }}"
+        Write-Output "Validating Bicep template using path: $env:TEMPLATE_PATH"
+        az deployment sub create --name $resourceGroupName --location "${{ inputs.region }}" --template-file "$templatePath" --parameters namePrefix=${{ inputs.namePrefix }} resourceGroupName=$resourceGroupName --what-if

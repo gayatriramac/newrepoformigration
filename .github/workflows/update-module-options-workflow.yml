@@ -1,0 +1,122 @@
+name: update-module-options-workflow
+
+on:
+  workflow_dispatch:
+
+  schedule:
+    - cron: "0 0 * * *" # Runs daily at midnight UTC
+
+permissions:
+  id-token: write
+  contents: write
+  statuses: write
+  actions: write
+
+jobs:
+
+  update_modules:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate App Token
+        uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.VERSION_BUMPER_APPID }}
+          private-key: ${{ secrets.VERSION_BUMPER_SECRET }}
+        # Echo statement to explain step
+        env:
+          DEBUG: "Generating GitHub App token for authentication..."
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
+        # Echo to explain step
+        env:
+          DEBUG: "Checking out the repository for updates..."
+
+      - name: Create and checkout feature branch
+        shell: pwsh
+        id: create_branch
+        env:
+            BASE_BRANCH: ${{ github.head_ref }}
+        run: |
+                # Use main as the base branch if head_ref is empty
+                $baseBranch = "$env:BASE_BRANCH" -ne "" ? "$env:BASE_BRANCH" : "main"
+                Write-Host "Base branch for feature branch: $baseBranch"
+
+                # Generate a dynamic branch name with the current date and time
+                $currentDateTime = Get-Date -Format "MMddyyyy-HHmm"
+                $branchName = "ci/$currentDateTime-module-list"
+
+                Write-Host "Generated Branch Name: $branchName"
+                # Checkout the base branch and pull the latest changes
+                git checkout $baseBranch
+                git pull origin $baseBranch
+
+                # Create and checkout the new branch
+                git branch $branchName || Write-Output "Branch already exists locally or remotely."
+                git checkout $branchName
+
+                # Set the branch name as an output for subsequent steps
+                Add-Content -Path $env:GITHUB_OUTPUT -Value "branchName=$branchName"
+
+      - name: Fetch module list from MCR(https://mcr.microsoft.com/v2) and Update Onboard Module Input options
+        id: fetch_modules
+        shell: pwsh
+        run: |
+              Write-Output "Fetching module list from MCR and cleaning up entries."
+
+              # Fetch module list from the script
+              $ListOutput = ./utilities/tools/Get-ModuleList.ps1
+              Write-Host "Raw module list from script:"
+              Write-Host "$($ListOutput)"
+
+              # Format the module list to remove brackets and clean up
+              Write-Host "Formatting module list to remove unwanted characters..."
+              $FormattedList = $ListOutput | ForEach-Object {
+                  $_.Trim() -replace '["''\[\]]', '' # Remove unwanted characters
+              } | Where-Object {
+                  $_ -ne '' # Remove empty strings
+              }
+
+              # Log the cleaned module list
+              Write-Host "Cleaned Module List:"
+              $FormattedList | ForEach-Object { Write-Host "- $_" }
+
+              # Pass the cleaned list to the update script
+              Write-Host "Updating onboarding workflow YAML with the cleaned module list..."
+              ./utilities/tools/Update-ModuleList.ps1 -yamlFilePath ".github/workflows/onboarding-workflow.yml" -newOptions $FormattedList
+
+      - name: Push changes to feature branch
+        env:
+            token: ${{ steps.app-token.outputs.token }}
+        shell: pwsh
+        run: |
+                Write-Output "Preparing to push changes to the feature branch."
+                # Configure Git
+                Write-Host "Configuring Git with username and email..."
+                git config --global user.name "github-actions"
+                git config --global user.email "github-actions@gtest.com"
+
+                # Fetch the latest changes from the remote branch
+                Write-Host "Fetching the latest changes from the remote feature branch..."
+                git fetch origin "${{ steps.create_branch.outputs.branchName }}"
+
+                # Rebase the local branch with the remote branch
+                Write-Host "Rebasing the local branch with the remote feature branch..."
+                git rebase origin/"${{ steps.create_branch.outputs.branchName }}"
+
+                # Stage changes
+                Write-Host "Staging changes..."
+                git add .
+
+                # Commit changes (only if there are changes)
+                Write-Host "Committing changes if there are any..."
+                git commit -m "Cleaned and updated module_path options in onboarding workflow" || echo "No changes to commit"
+
+                # Push changes back to the remote branch (use force-with-lease for safety)
+                Write-Host "Pushing changes to the feature branch..."
+                git push origin "${{ steps.create_branch.outputs.branchName }}" --force-with-lease
