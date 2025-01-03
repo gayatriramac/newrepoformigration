@@ -1,0 +1,56 @@
+name: Deploy RBAC
+
+on:
+  workflow_dispatch:
+    # Based on discussion with proximus team, the enviorment option will be provided
+    # so that the user can select the environment to deploy instead of creating multiple
+    # workflows with hardcoded value
+    inputs:
+      environment:
+        description: "Select the environment to deploy"
+        required: true
+        default: innovation
+        type: choice
+        options:
+          - innovation
+          - proximusuat
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+  EXECUTION_PATH: "orchestration/rbac/"
+  MANAGEMENT_GROUP_ID: "pxs-mg"
+
+jobs:
+  DeployRBAC:
+    name: Deploy RBAC ${{ github.event.inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    steps:
+      - name: Checkout the feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Run Lint Code
+        id: lint_code
+        uses: ./.github/actions/templates/lint
+        with:
+          module_path: ${{ env.EXECUTION_PATH }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy RBAC ${{ github.event.inputs.environment }}
+        id: deploy_innovation_bicep
+        uses: ./.github/actions/templates/bicep-deployment
+        with:
+          managementGroupId: ${{ env.MANAGEMENT_GROUP_ID }}
+          gitHubEnvironment: ${{ github.event.inputs.environment }}
+          azureLocation: ${{ vars.AZURE_LOCATION }}
+          bicepFile: "${{ env.EXECUTION_PATH }}main.bicep"
+          bicepParameterFile: "${{ env.EXECUTION_PATH }}${{ github.event.inputs.environment }}.main.bicepparam"
+          description: "rbac-infrastructure"
+          azure_client_id: ${{ secrets.PXS_AZURE_PROXIMUS_RBAC_SP_CLIENT_ID }}
+          azure_tenant_id: ${{ secrets.AZURE_TENANT_ID }}

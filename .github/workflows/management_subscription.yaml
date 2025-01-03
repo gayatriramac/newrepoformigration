@@ -1,0 +1,41 @@
+name: Deploy Management Resources
+
+on:
+  # TODO: code will be removed once testing is done
+  push:
+    branches:
+      - "feature/garamac/createbiceptemplate"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+  BICEP_FILE: "orchestration/management/main.bicep"
+  SUB_NAME: "pxs-cn-is-azplg0016-sub"
+
+jobs:
+  DeployManagementResources-Innovation:
+    name: Deploy Management Resources Innovation
+    runs-on: ubuntu-latest
+    environment: innovation
+    steps:
+      - name: Checkout the feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Deploy Resources
+        id: deploy_innovation_bicep
+        uses: ./.github/actions/templates/bicep-deployment-subscription
+        with:
+          gitHubEnvironment: "innovation"
+          azureLocation: ${{ vars.AZURE_LOCATION }}
+          bicepFile: ${{ env.BICEP_FILE }}
+          bicepParameterFile: "orchestration/management/innovation.main.bicepparam"
+          description: "monitoring-infrastructure"
+          azure_client_id: ${{ secrets.PXS_AZURE_PROXIMUS_MG_SP_CLIENT_ID }}
+          azure_tenant_id: ${{ secrets.AZURE_TENANT_ID }}
+          azure_subscription_name: ${{ env.SUB_NAME }}

@@ -1,0 +1,98 @@
+name: Deploy Management Groups
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Select the environment to deploy"
+        required: true
+        default: innovation
+        type: choice
+        options:
+          - innovation
+          - proximusuat
+
+permissions:
+  id-token: write # Require write permission to Fetch an OIDC token.
+  contents: read # Require read permission to checkout the repository.
+
+env:
+  AZURE_MG_CLIENT_ID: ${{ secrets.PXS_AZURE_PROXIMUS_MG_SP_CLIENT_ID }}
+  AZURE_POLICY_CLIENT_ID: ${{ secrets.PXS_AZURE_PROXIMUS_POLICY_SP_CLIENT_ID }}
+  AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  MANAGEMENT_GROUP_ID: "pxs-mg" # Replace with your actual root management group ID
+  MGMT_BICEP_FILE: "orchestration/management-group/main.bicep"
+  MGMT_PARAMETER_FILE: "orchestration/management-group/parameters.json"
+  AZURE_LOCATION: ${{vars.AZURE_LOCATION}}
+
+jobs:
+  DeployManagementGroupStructure:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate Timestamp
+        id: timestamp
+        run: |
+          echo "utcNow=$(date -u +'%Y%m%dT%H%M%SZ')" >> "$GITHUB_ENV"
+
+      - name: Login to Azure # Login using Management Group Service Principal.
+        uses: azure/login@v2
+        with:
+          client-id: ${{ env.AZURE_MG_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          enable-AzPSSession: true
+          allow-no-subscriptions: true
+
+      - name: Validate Management Groups Bicep
+        uses: azure/arm-deploy@v2
+        with:
+          scope: "managementgroup"
+          deploymentMode: "validate"
+          managementGroupId: ${{ env.MANAGEMENT_GROUP_ID }}
+          template: ${{ env.MGMT_BICEP_FILE }}
+          parameters: ${{ env.MGMT_PARAMETER_FILE }}
+          region: ${{ env.AZURE_LOCATION }}
+          deploymentName: "${{ env.utcNow }}-management-groups-infrastructure-validate"
+
+      - name: Deploy Management Groups Bicep
+        uses: azure/arm-deploy@v2
+        with:
+          scope: "managementgroup"
+          deploymentMode: "incremental"
+          managementGroupId: ${{ env.MANAGEMENT_GROUP_ID }}
+          template: ${{ env.MGMT_BICEP_FILE }}
+          parameters: ${{ env.MGMT_PARAMETER_FILE }}
+          region: ${{ env.AZURE_LOCATION }}
+          deploymentName: "${{ env.utcNow }}-management-groups-infrastructure"
+
+      - name: Login to Azure # Login using Policy Service Principal.
+        uses: azure/login@v2
+        with:
+          client-id: ${{ env.AZURE_POLICY_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          enable-AzPSSession: true
+          allow-no-subscriptions: true
+
+      - name: Register Monitoring Insights Resource Provider
+        run: |
+          # Install jq to parse JSON files
+          sudo apt-get install -y jq
+
+          # Extract management group names from parameters.json
+          MANAGEMENT_GROUP_NAMES=$(jq -r '.parameters.mgmtGroups.value | to_entries[] | "pxs-\(.value.name)"' ${{ env.MGMT_PARAMETER_FILE }})
+
+          echo "Management Group Names: $MANAGEMENT_GROUP_NAMES"
+
+          # Loop through each management group and register the Microsoft.PolicyInsights provider
+          for mg_name in $MANAGEMENT_GROUP_NAMES; do
+          echo "Registering Microsoft.Insights provider for Management Group: $mg_name"
+
+          # Register the Monitoring Insights resource provider for the management group
+          az provider register --namespace Microsoft.PolicyInsights --management-group "$mg_name"
+
+          echo "Resource provider Microsoft.PolicyInsights registered successfully for MG: $mg_name"
+          done

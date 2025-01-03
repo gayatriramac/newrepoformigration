@@ -27,7 +27,7 @@ inputs:
   MARKDOWNLINT_CONFIG_FILE:
     description: "Path to custom markdownlint configuration file"
     required: false
-    default: "./.markdownlint.json"
+    default: "./elements/res/.markdownlint.json"
   node_version:
     description: "Node.js version for linting setup"
     required: false
@@ -40,16 +40,42 @@ inputs:
 runs:
   using: "composite"
   steps:
+    # Checkout the repository
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    # Set dynamic path for linting
     - name: Set dynamic path for linting
       shell: bash
       run: |
+        echo "Module path for linting: ${{ inputs.module_path }}"
         MODULE_PATH="${{ inputs.module_path }}"
-        echo "Module path for linting: $MODULE_PATH"
+        echo "MODULE_PATH=$MODULE_PATH" >> $GITHUB_ENV  # Set MODULE_PATH as an environment variable
 
+    # Setup Node.js (if required)
     - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
         node-version: ${{ inputs.node_version }}
+
+    - name: Debug MODULE_PATH
+      shell: bash
+      run: |
+        echo "MODULE_PATH is: $MODULE_PATH"
+
+    # Lint the Bicep file(s)
+    - name: Lint Bicep files
+      shell: bash
+      run: |
+
+        bicep lint "$MODULE_PATH"/main.bicep
+
+    # Build the Bicep files (optional, but helpful to catch any issues with the Bicep template)
+    - name: Build Bicep files
+      shell: bash
+      run: |
+
+        bicep build "$MODULE_PATH"/main.bicep
 
     - name: Lint Codebase with Super Linter
       uses: github/super-linter@v5
