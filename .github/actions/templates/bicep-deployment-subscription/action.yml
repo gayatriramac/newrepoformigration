@@ -64,33 +64,33 @@ runs:
         enable-AzPSSession: true
         allow-no-subscriptions: true
 
-    - name: Get Subscription ID by Name
-      shell: bash
-      id: get-subscription
-      run: |
-        if [ -z "${{ inputs.azure_subscription_id }}" ] && [ -z "${{ inputs.azure_subscription_name }}" ]; then
-          echo "Error: Both azure_subscription_id and azure_subscription_name are empty. Stopping the workflow."
-          exit 1
-        fi
+    # - name: Get Subscription ID by Name
+    #   shell: bash
+    #   id: get-subscription
+    #   run: |
+    #     if [ -z "${{ inputs.azure_subscription_id }}" ] && [ -z "${{ inputs.azure_subscription_name }}" ]; then
+    #       echo "Error: Both azure_subscription_id and azure_subscription_name are empty. Stopping the workflow."
+    #       exit 1
+    #     fi
 
-        if [ -z "${{ inputs.azure_subscription_id }}" ]; then
-          SUBSCRIPTION_ID=$(az account list --query "[?name=='${{ inputs.azure_subscription_name }}' && state=='Enabled'].id" --output tsv | head -n 1)
-        else
-          SUBSCRIPTION_ID="${{ inputs.azure_subscription_id }}"
-        fi
+    #     if [ -z "${{ inputs.azure_subscription_id }}" ]; then
+    #       SUBSCRIPTION_ID=$(az account list --query "[?name=='${{ inputs.azure_subscription_name }}' && state=='Enabled'].id" --output tsv | head -n 1)
+    #     else
+    #       SUBSCRIPTION_ID="${{ inputs.azure_subscription_id }}"
+    #     fi
 
-        # Check if SUBSCRIPTION_ID is still empty after setting it
-        if [ -z "$SUBSCRIPTION_ID" ]; then
-          echo "Error: SUBSCRIPTION_ID is empty. Stopping the workflow."
-          exit 1
-        fi
-        echo "subscription ids $SUBSCRIPTION_ID"
-        echo "SUBSCRIPTION_ID=$SUBSCRIPTION_ID" >> $GITHUB_ENV
+    #     # Check if SUBSCRIPTION_ID is still empty after setting it
+    #     if [ -z "$SUBSCRIPTION_ID" ]; then
+    #       echo "Error: SUBSCRIPTION_ID is empty. Stopping the workflow."
+    #       exit 1
+    #     fi
+    #     echo "subscription ids $SUBSCRIPTION_ID"
+    #     echo "SUBSCRIPTION_ID=$SUBSCRIPTION_ID" >> $GITHUB_ENV
 
-    - name: Print subscription ID by Name
-      shell: bash
-      run: |
-        echo "subscription id ${{ env.SUBSCRIPTION_ID }}"
+    # - name: Print subscription ID by Name
+    #   shell: bash
+    #   run: |
+    #     echo "subscription id ${{ env.SUBSCRIPTION_ID }}"
 
     - name: Login To Azure
       uses: azure/login@v2
