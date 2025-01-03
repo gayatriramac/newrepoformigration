@@ -2,42 +2,27 @@
 
 ## Description
 
-<!--
->Thank you for your contribution !
-> Please include a summary of the change and which issue is fixed.
-> Please also include the context.
-> List any dependencies that are required for this change.
+Please include a summary of the changes and the related issue.
+Fixes # (issue)
 
-Fixes #123
-Fixes #456
-Closes #123
-Closes #456
--->
+## Type of change
 
-## Pipeline Reference
+Please delete options that are not relevant.
 
-<!-- Insert your Pipeline Status Badge below -->
+- [ ] Bug fix (non-breaking change which fixes an issue)
+- [ ] New feature (non-breaking change which adds functionality)
+- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
+- [ ] This change requires a documentation update
 
-| Pipeline |
-| -------- |
-|          |
-
-## Type of Change
-
-<!-- Use the checkboxes [x] on the options that are relevant. -->
-
-- [ ] Update to CI Environment or utilities (Non-module affecting changes)
-- [ ] Element Module updates:
-  - [ ] Bugfix containing backwards-compatible bug fixes, and I have NOT bumped the MAJOR or MINOR version in `version.json`:
-    - [ ] Someone has opened a bug report issue, and I have included "Closes #{bug_report_issue_number}" in the PR description.
-    - [ ] The bug was found by the module author, and no one has opened an issue to report it yet.
-  - [ ] Feature update backwards compatible feature updates, and I have bumped the MINOR version in `version.json`.
-  - [ ] Breaking changes and I have bumped the MAJOR version in `version.json`.
-  - [ ] Update to documentation
+## Implemtation Evidances
 
 ## Checklist
 
-- [ ] I'm sure there are no other open Pull Requests for the same update/change
-- [ ] I have run `Set-AVMModule` locally to generate the supporting module files.
-- [ ] My corresponding pipelines / checks run clean and green without any errors or warnings
-
+- [ ] My code follows the style guidelines of this project
+- [ ] I have performed a self-review of my own code
+- [ ] I have commented my code, particularly in hard-to-understand areas
+- [ ] I have made corresponding changes to the documentation
+- [ ] My changes generate no new warnings
+- [ ] I have added tests that prove my fix is effective or that my feature works
+- [ ] New and existing unit tests pass locally with my changes
+- [ ] Any dependent changes have been merged and published in downstream modules

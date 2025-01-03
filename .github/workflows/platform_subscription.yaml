@@ -1,0 +1,49 @@
+name: Deploy Platform Subscriptions
+
+on:
+  workflow_dispatch:
+    # Based on discussion with proximus team, the enviorment option will be provided
+    # so that the user can select the environment to deploy instead of creating multiple
+    # workflows with hardcoded value
+    inputs:
+      environment:
+        description: "Select the environment to deploy"
+        required: true
+        default: innovation
+        type: choice
+        options:
+          - innovation
+          - proximusuat
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+  BICEP_FILE: "orchestration/platform-subscriptions/main.bicep"
+
+jobs:
+  DeployPlatformSubscriptions:
+    name: Deploy Platform Subscriptions ${{ github.event.inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+
+    steps:
+      - name: Checkout the feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Deploy Subscriptions
+        id: deploy_bicep
+        uses: ./.github/actions/templates/bicep-deployment
+        with:
+          managementGroupId: "pxs-platform-mg"
+          gitHubEnvironment: ${{ github.event.inputs.environment }}
+          azureLocation: ${{ vars.AZURE_LOCATION }}
+          bicepFile: ${{ env.BICEP_FILE }}
+          bicepParameterFile: "orchestration/platform-subscriptions/${{ github.event.inputs.environment }}.main.bicepparam"
+          description: "platform-infrastructure"
+          azure_client_id: ${{ secrets.PXS_AZURE_PROXIMUS_MG_SP_CLIENT_ID }}
+          azure_tenant_id: ${{ secrets.AZURE_TENANT_ID }}

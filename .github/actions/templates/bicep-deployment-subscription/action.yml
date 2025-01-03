@@ -1,0 +1,135 @@
+name: Deploy Bicep
+description: Composite action to validate and deploy Bicep files to Azure.
+
+inputs:
+  managementGroupId:
+    description: "The Management Group ID to deploy the Bicep file to."
+    required: true
+  gitHubEnvironment:
+    required: true
+    description: "The GitHub environment to deploy the Bicep file to."
+  azureLocation:
+    required: true
+    description: "The Azure location to deploy the Bicep file to."
+  bicepFile:
+    required: true
+    description: "The path to the Bicep file to deploy."
+  bicepParameterFile:
+    required: true
+    description: "The path to the Bicep parameter file to use."
+  description:
+    required: true
+    description: "A description of the deployment to form deployment name."
+  azure_client_id:
+    description: "Az Auth: Azure client ID"
+    required: true
+  azure_tenant_id:
+    description: "Az Auth: Azure tenant ID"
+    required: true
+  azure_subscription_id:
+    description: "Az Auth: Azure subscription ID"
+    required: true
+  azure_subscription_name:
+    description: "Az Auth: Azure subscription Name"
+    required: true
+
+runs:
+  using: "composite"
+
+  steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Check if Bicep parameter file exists
+      shell: bash
+      run: |
+        if [ -f "${{ inputs.bicepParameterFile }}" ]; then
+          echo "Bicep parameter file '${{ inputs.bicepParameterFile }}' exists. Proceeding with workflow."
+        else
+          echo "Bicep parameter file '${{ inputs.bicepParameterFile }}' does not exist. Stopping workflow."
+          exit 1
+        fi
+
+    - name: Generate Timestamp
+      shell: bash
+      id: timestamp
+      run: |
+        echo "utcNow=$(date -u +'%Y%m%dT%H%M%SZ')" >> $GITHUB_ENV
+
+    - name: Login To Azure
+      uses: azure/login@v2
+      with:
+        client-id: ${{ inputs.azure_client_id }}
+        tenant-id: ${{ inputs.azure_tenant_id }}
+        enable-AzPSSession: true
+        allow-no-subscriptions: true
+
+    - name: Get Subscription ID by Name
+      shell: bash
+      id: get-subscription
+      run: |
+        if [ -z "${{ inputs.azure_subscription_id }}" ] && [ -z "${{ inputs.azure_subscription_name }}" ]; then
+          echo "Error: Both azure_subscription_id and azure_subscription_name are empty. Stopping the workflow."
+          exit 1
+        fi
+
+        if [ -z "${{ inputs.azure_subscription_id }}" ]; then
+          SUBSCRIPTION_ID=$(az account list --query "[?name=='${{ inputs.azure_subscription_name }}' && state=='Enabled'].id" --output tsv | head -n 1)
+        else
+          SUBSCRIPTION_ID="${{ inputs.azure_subscription_id }}"
+        fi
+
+        # Check if SUBSCRIPTION_ID is still empty after setting it
+        if [ -z "$SUBSCRIPTION_ID" ]; then
+          echo "Error: SUBSCRIPTION_ID is empty. Stopping the workflow."
+          exit 1
+        fi
+        echo "subscription ids $SUBSCRIPTION_ID"
+        echo "SUBSCRIPTION_ID=$SUBSCRIPTION_ID" >> $GITHUB_ENV
+
+    - name: Print subscription ID by Name
+      shell: bash
+      run: |
+        echo "subscription id ${{ env.SUBSCRIPTION_ID }}"
+
+    - name: Login To Azure
+      uses: azure/login@v2
+      with:
+        client-id: ${{ inputs.azure_client_id }}
+        tenant-id: ${{ inputs.azure_tenant_id }}
+        subscription-id: ${{ env.SUBSCRIPTION_ID }}
+        enable-AzPSSession: true
+        allow-no-subscriptions: false
+
+    - name: Deploy Bicep File
+      uses: azure/bicep-deploy@v1
+      with:
+        type: deployment
+        operation: validate
+        name: "${{ env.utcNow }}-${{ inputs.description }}-validate-${{ inputs.gitHubEnvironment }}"
+        scope: subscription
+        subscription-id: ${{ env.SUBSCRIPTION_ID }}
+        template-file: ${{ inputs.bicepFile }}
+        parameters-file: ${{ inputs.bicepParameterFile }}
+        location: ${{ inputs.azureLocation }}
+
+    - name: What-If Bicep Deployment
+      shell: bash
+      run: |
+        az deployment sub what-if \
+          --location ${{ inputs.azureLocation }} \
+          --template-file ${{ inputs.bicepFile }} \
+          --parameters ${{ inputs.bicepParameterFile }} \
+          --name "${{ env.utcNow }}-${{ inputs.description }}-whatif-${{ inputs.gitHubEnvironment }}"
+
+    - name: Deploy Bicep File
+      uses: azure/bicep-deploy@v1
+      with:
+        type: deployment
+        operation: create
+        name: "${{ env.utcNow }}-${{ inputs.description }}-${{ inputs.gitHubEnvironment }}"
+        scope: subscription
+        subscription-id: ${{ env.SUBSCRIPTION_ID }}
+        template-file: ${{ inputs.bicepFile }}
+        parameters-file: ${{ inputs.bicepParameterFile }}
+        location: ${{ inputs.azureLocation }}

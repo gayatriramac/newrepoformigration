@@ -1,0 +1,88 @@
+name: Deploy Bicep
+description: Composite action to validate and deploy Bicep files to Azure.
+
+inputs:
+  managementGroupId:
+    description: "The Management Group ID to deploy the Bicep file to."
+    required: true
+  gitHubEnvironment:
+    required: true
+    description: "The GitHub environment to deploy the Bicep file to."
+  azureLocation:
+    required: true
+    description: "The Azure location to deploy the Bicep file to."
+  bicepFile:
+    required: true
+    description: "The path to the Bicep file to deploy."
+  bicepParameterFile:
+    required: true
+    description: "The path to the Bicep parameter file to use."
+  description:
+    required: true
+    description: "A description of the deployment to form deployment name."
+  azure_client_id:
+    description: "Az Auth: Azure client ID"
+    required: true
+  azure_tenant_id:
+    description: "Az Auth: Azure tenant ID"
+    required: true
+
+runs:
+  using: "composite"
+
+  steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Check if Bicep parameter file exists
+      shell: bash
+      run: |
+        if [ -f "${{ inputs.bicepParameterFile }}" ]; then
+          echo "Bicep parameter file '${{ inputs.bicepParameterFile }}' exists. Proceeding with workflow."
+        else
+          echo "Bicep parameter file '${{ inputs.bicepParameterFile }}' does not exist. Stopping workflow."
+          exit 1
+        fi
+
+    - name: Generate Timestamp
+      shell: bash
+      id: timestamp
+      run: |
+        echo "utcNow=$(date -u +'%Y%m%dT%H%M%SZ')" >> $GITHUB_ENV
+
+    - name: Azure Login with OIDC
+      uses: azure/login@v2
+      with:
+        client-id: ${{ inputs.AZURE_CLIENT_ID }}
+        tenant-id: ${{ inputs.AZURE_TENANT_ID }}
+        enable-AzPSSession: true
+        allow-no-subscriptions: true
+
+    - name: Validate Bicep File
+      uses: azure/bicep-deploy@v1
+      with:
+        type: deployment
+        operation: validate
+        name: "${{ env.utcNow }}-${{ inputs.description }}-${{ inputs.gitHubEnvironment }}"
+        scope: managementGroup
+        management-group-id: ${{ inputs.managementGroupId }}
+        template-file: ${{ inputs.bicepFile }}
+        parameters-file: ${{ inputs.bicepParameterFile }}
+        location: ${{ inputs.azureLocation }}
+
+    - name: Bicep what-if
+      shell: bash
+      run: |
+        az deployment mg what-if --name "${{ env.utcNow }}-${{ inputs.description }}-${{ inputs.gitHubEnvironment }}" --location ${{ inputs.azureLocation }} --template-file ${{ inputs.bicepFile }} -m ${{ inputs.managementGroupId }} --parameters ${{ inputs.bicepParameterFile }}
+
+    - name: Deploy Bicep File
+      uses: azure/bicep-deploy@v1
+      with:
+        type: deployment
+        operation: create
+        name: "${{ env.utcNow }}-${{ inputs.description }}-${{ inputs.gitHubEnvironment }}"
+        scope: managementGroup
+        management-group-id: ${{ inputs.managementGroupId }}
+        template-file: ${{ inputs.bicepFile }}
+        parameters-file: ${{ inputs.bicepParameterFile }}
+        location: ${{ inputs.azureLocation }}
