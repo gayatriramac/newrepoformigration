@@ -14,7 +14,7 @@ permissions:
 env:
   AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
   BICEP_FILE: "orchestration/management/main.bicep"
-  SUB_NAME: "pxs-cn-is-azplg0016-sub"
+  SUB_NAME: "MCAPS-Hybrid-GY"
 
 jobs:
   DeployManagementResources-Innovation:
