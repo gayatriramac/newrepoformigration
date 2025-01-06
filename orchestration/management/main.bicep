@@ -29,27 +29,27 @@ param location string
 var workloadName = 'monitoring'
 
 // ---------------------- Resources ----------------------
-// resource resourceGroup 'Microsoft.Resources/resourceGroups@2024-07-01' = {
-//   name: toUpper(concat('${nameObject.client}-${nameObject.workloadIdentifier}-${workloadName}-${nameObject.environment}-${nameObject.region}-rg1'))
-//   location: location
-// }
+resource resourceGroup 'Microsoft.Resources/resourceGroups@2024-07-01' = {
+  name: toUpper(concat('${nameObject.client}-${nameObject.workloadIdentifier}-${workloadName}-${nameObject.environment}-${nameObject.region}-rg2'))
+  location: location
+}
 
 //---------------------- Modules ---------------------- 
-module resourcegroup 'br/public:avm/res/resources/resource-group:0.4.0' = {
-  name: take('resourcegroup-${workloadName}', 64)
-  params: {
-    name: toUpper(concat('${nameObject.client}-${nameObject.workloadIdentifier}-${workloadName}-${nameObject.environment}-${nameObject.region}-rg1'))
-    location: location
-    }
-}
+// module resourceGroup 'br/public:avm/res/resources/resource-group:0.4.0' = {
+//   name: take('resourcegroup-${workloadName}', 64)
+//   params: {
+//     name: toUpper(concat('${nameObject.client}-${nameObject.workloadIdentifier}-${workloadName}-${nameObject.environment}-${nameObject.region}-rg1'))
+//     location: location
+//     }
+// }
 
 module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
   
   name: 'storageAccountDeployment'
-  scope: resourcegroup
+  scope : resourceGroup
   params: {
     // Required parameters
-    name: toUpper(concat('${nameObject.client}-${nameObject.workloadIdentifier}-${workloadName}-${nameObject.environment}-${nameObject.region}-sa1'))
+    name: toUpper(concat('${nameObject.client}-${nameObject.workloadIdentifier}-${workloadName}-${nameObject.environment}-${nameObject.region}-'))
     // Non-required parameters
     allowBlobPublicAccess: false
     location: location
