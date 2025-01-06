@@ -5,7 +5,7 @@ param location = 'germanywestcentral'
 param nameObject = {
   client: 'pxs'
   workloadIdentifier: 'myt'
-  environment: 'd'
+  environment: 'dev'
   region: 'gwc'
 }
 
