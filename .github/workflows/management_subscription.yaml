@@ -38,9 +38,7 @@ jobs:
           bicepFile: ${{ env.BICEP_FILE }}
           bicepParameterFile: "orchestration/management/innovation.main.bicepparam"
           description: "monitoring-infrastructure"
-          azure_client_id: ${{ secrets.PXS_AZURE_PROXIMUS_MG_SP_CLIENT_ID }}
-          azure_tenant_id: ${{ secrets.AZURE_TENANT_ID }}
-          azure_subscription_name: ${{ env.SUB_NAME }}
-
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+          
 
   
