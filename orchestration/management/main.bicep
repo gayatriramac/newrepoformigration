@@ -43,6 +43,22 @@ module resourcegroup 'br/public:avm/res/resources/resource-group:0.4.0' = {
     }
 }
 
+module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
+  
+  name: 'storageAccountDeployment'
+  scope: resourcegroup
+  params: {
+    // Required parameters
+    name: toUpper(concat('${nameObject.client}-${nameObject.workloadIdentifier}-${workloadName}-${nameObject.environment}-${nameObject.region}-sa1'))
+    // Non-required parameters
+    allowBlobPublicAccess: false
+    location: location
+    networkAcls: {
+      bypass: 'AzureServices'
+      defaultAction: 'Deny'
+    }
+  }
+}
 // ---------------------- Modules ----------------------
 // module workspace 'br/public:avm/res/operational-insights/workspace:0.9.1' = {
 //   name: take('${timestamp}-logworkspace-${workloadName}', 64)

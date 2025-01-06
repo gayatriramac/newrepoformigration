@@ -150,6 +150,10 @@
         "public": {
           "registry": "mcr.microsoft.com",
           "modulePath": "bicep"
+        },
+        "private": {
+          "registry": "acr.microsoft.com",
+          "modulePath": "bicep"
         }
       }
     }
