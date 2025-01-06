@@ -32,6 +32,7 @@ jobs:
                az account show
                
   DeployManagementResources-Innovation:
+    needs: BuildandDeploy
     name: Deploy Management Resources Innovation
     runs-on: ubuntu-latest
     environment: innovation
