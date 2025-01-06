@@ -59,10 +59,7 @@ runs:
     - name: Login To Azure
       uses: azure/login@v2
       with:
-        client-id: ${{ inputs.azure_client_id }}
-        tenant-id: ${{ inputs.azure_tenant_id }}
-        enable-AzPSSession: true
-        allow-no-subscriptions: true
+           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
     # - name: Get Subscription ID by Name
     #   shell: bash
@@ -95,11 +92,7 @@ runs:
     - name: Login To Azure
       uses: azure/login@v2
       with:
-        client-id: ${{ inputs.azure_client_id }}
-        tenant-id: ${{ inputs.azure_tenant_id }}
-        subscription-id: ${{ env.SUBSCRIPTION_ID }}
-        enable-AzPSSession: true
-        allow-no-subscriptions: false
+           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
     - name: Deploy Bicep File
       uses: azure/bicep-deploy@v1
