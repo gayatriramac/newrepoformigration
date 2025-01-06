@@ -105,7 +105,7 @@ runs:
         operation: validate
         name: "${{ env.utcNow }}-${{ inputs.description }}-validate-${{ inputs.gitHubEnvironment }}"
         scope: subscription
-        subscription-id: ${{ env.SUBSCRIPTION_ID }}
+        subscription-id: ${{ inputs.azure_subscription_id }}
         template-file: ${{ inputs.bicepFile }}
         parameters-file: ${{ inputs.bicepParameterFile }}
         location: ${{ inputs.azureLocation }}
@@ -126,7 +126,7 @@ runs:
         operation: create
         name: "${{ env.utcNow }}-${{ inputs.description }}-${{ inputs.gitHubEnvironment }}"
         scope: subscription
-        subscription-id: ${{ env.SUBSCRIPTION_ID }}
+        subscription-id: ${{  inputs.azure_subscription_id  }}
         template-file: ${{ inputs.bicepFile }}
         parameters-file: ${{ inputs.bicepParameterFile }}
         location: ${{ inputs.azureLocation }}
