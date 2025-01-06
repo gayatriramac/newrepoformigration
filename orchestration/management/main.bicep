@@ -29,9 +29,18 @@ param location string
 var workloadName = 'monitoring'
 
 // ---------------------- Resources ----------------------
-resource resourceGroup 'Microsoft.Resources/resourceGroups@2024-07-01' = {
-  name: toUpper(concat('${nameObject.client}-${nameObject.workloadIdentifier}-${workloadName}-${nameObject.environment}-${nameObject.region}-rg1'))
-  location: location
+// resource resourceGroup 'Microsoft.Resources/resourceGroups@2024-07-01' = {
+//   name: toUpper(concat('${nameObject.client}-${nameObject.workloadIdentifier}-${workloadName}-${nameObject.environment}-${nameObject.region}-rg1'))
+//   location: location
+// }
+
+//---------------------- Modules ---------------------- 
+module resourcegroup 'br/public:avm/res/resources/resource-group:0.4.0' = {
+  name: take('resourcegroup-${workloadName}', 64)
+  params: {
+    name: toUpper(concat('${nameObject.client}-${nameObject.workloadIdentifier}-${workloadName}-${nameObject.environment}-${nameObject.region}-rg1'))
+    location: location
+    }
 }
 
 // ---------------------- Modules ----------------------
