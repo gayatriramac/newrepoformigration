@@ -32,6 +32,10 @@ inputs:
   azure_subscription_name:
     description: "Az Auth: Azure subscription Name"
     required: true
+  AZURE_CREDENTIALS: 
+    description: "Credentials"
+    required: true
+    
 
 runs:
   using: "composite"
@@ -59,7 +63,7 @@ runs:
     - name: Login To Azure
       uses: azure/login@v2
       with:
-           creds: ${{ secrets.AZURE_CREDENTIALS }}
+           creds: ${{ inputs.AZURE_CREDENTIALS }}
 
     # - name: Get Subscription ID by Name
     #   shell: bash
