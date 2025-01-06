@@ -64,7 +64,7 @@ runs:
       uses: azure/login@v2
       with:
            creds: ${{ inputs.AZURE_CREDENTIALS }}
-
+           
     # - name: Get Subscription ID by Name
     #   shell: bash
     #   id: get-subscription
