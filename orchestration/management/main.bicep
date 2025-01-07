@@ -44,9 +44,8 @@ resource resourceGroup 'Microsoft.Resources/resourceGroups@2024-07-01' = {
 // }
 
 module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
-  
   name: 'storageAccountDeployment'
-  scope : resourceGroup
+  scope: resourceGroup
   params: {
     // Required parameters
     name: concat('${nameObject.client}${nameObject.workloadIdentifier}${workloadName}dev')
@@ -56,6 +55,14 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
     networkAcls: {
       bypass: 'AzureServices'
       defaultAction: 'Deny'
+    }
+    blobServices: {
+      containers: [
+        {
+          name: 'deadletterfiles'
+          publicAccess: 'None'
+        }
+      ]
     }
   }
 }
