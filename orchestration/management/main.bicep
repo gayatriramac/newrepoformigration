@@ -58,10 +58,10 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
     }
     blobServices: {
       containers: [
-        {
-          name: 'deadletterfiles'
-          publicAccess: 'None'
-        }
+        // {
+        //   name: 'deadletterfiles'
+        //   publicAccess: 'None'
+        // }
         {
           name: 'provider'
           publicAccess: 'None'
