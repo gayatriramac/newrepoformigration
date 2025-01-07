@@ -59,6 +59,17 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
     }
   }
 }
+
+module namespace 'br/public:avm/res/event-hub/namespace:0.8.0' = {
+  scope: resourceGroup
+  name: 'namespaceDeployment'
+  params: {
+    // Required parameters
+    name: concat('${nameObject.client}${nameObject.workloadIdentifier}${workloadName}eh')
+    // Non-required parameters
+    location: location
+  }
+}
 // ---------------------- Modules ----------------------
 // module workspace 'br/public:avm/res/operational-insights/workspace:0.9.1' = {
 //   name: take('${timestamp}-logworkspace-${workloadName}', 64)
