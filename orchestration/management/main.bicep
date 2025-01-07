@@ -48,7 +48,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
   scope: resourceGroup
   params: {
     // Required parameters
-    name: concat('${nameObject.client}${nameObject.workloadIdentifier}${workloadName}dev')
+    name: concat('${nameObject.client}${nameObject.workloadIdentifier}${workloadName}sbx')
     // Non-required parameters
     allowBlobPublicAccess: false
     location: location
@@ -58,10 +58,10 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
     }
     blobServices: {
       containers: [
-        // {
-        //   name: 'deadletterfiles'
-        //   publicAccess: 'None'
-        // }
+        {
+          name: 'deadletterfiles'
+          publicAccess: 'None'
+        }
         {
           name: 'provider'
           publicAccess: 'None'
