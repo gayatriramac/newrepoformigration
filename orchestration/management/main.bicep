@@ -62,6 +62,10 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
           name: 'deadletterfiles'
           publicAccess: 'None'
         }
+        {
+          name: 'provider'
+          publicAccess: 'None'
+        }
       ]
     }
   }
