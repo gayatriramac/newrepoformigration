@@ -79,6 +79,37 @@ module namespace 'br/public:avm/res/event-hub/namespace:0.8.0' = {
     name: concat('${nameObject.client}${nameObject.workloadIdentifier}${workloadName}eh')
     // Non-required parameters
     location: location
+    eventhubs: [
+      {
+        name: 'az-evh-x-001'
+        
+      }
+      {
+        authorizationRules: [
+          {
+            name: 'RootManageSharedAccessKey'
+            rights: [
+              'Listen'
+              'Manage'
+              'Send'
+            ]
+          }
+          {
+            name: 'SendListenAccess'
+            rights: [
+              'Listen'
+              'Send'
+            ]
+          }
+        ]        
+        consumergroups: [
+          {
+            name: 'custom'
+            userMetadata: 'customMetadata'
+          }
+        ]
+      }      
+    ]
   }
 }
 // ---------------------- Modules ----------------------
