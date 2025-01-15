@@ -71,47 +71,73 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
   }
 }
 
-module namespace 'br/public:avm/res/event-hub/namespace:0.8.0' = {
+
+module systemTopic 'br/public:avm/res/event-grid/system-topic:0.4.0' = {
+  name: 'systemTopicDeployment'
   scope: resourceGroup
-  name: 'namespaceDeployment'
   params: {
     // Required parameters
-    name: concat('${nameObject.client}${nameObject.workloadIdentifier}${workloadName}eh')
+    
+    name: 'egstmin001'
+    source: storageAccount.outputs.resourceId
+    topicType: 'Microsoft.Storage.StorageAccounts'
     // Non-required parameters
     location: location
-    eventhubs: [
-      {
-        name: 'az-evh-x-001'
-        
-      }
-      {
-        authorizationRules: [
-          {
-            name: 'RootManageSharedAccessKey'
-            rights: [
-              'Listen'
-              'Manage'
-              'Send'
-            ]
-          }
-          {
-            name: 'SendListenAccess'
-            rights: [
-              'Listen'
-              'Send'
-            ]
-          }
-        ]        
-        consumergroups: [
-          {
-            name: 'custom'
-            userMetadata: 'customMetadata'
-          }
-        ]
-      }      
-    ]
   }
 }
+
+// module namespace 'br/public:avm/res/event-hub/namespace:0.8.0' = {
+//   scope: resourceGroup
+//   name: 'namespaceDeployment'
+//   params: {
+//     // Required parameters
+//     name: concat('${nameObject.client}${nameObject.workloadIdentifier}${workloadName}eh')
+//     // Non-required parameters
+//     location: location
+//     eventhubs: [
+//       {
+//         name: 'az-evh-x-001'
+        
+//       }
+//       {
+//         authorizationRules: [
+//           {
+//             name: 'RootManageSharedAccessKey'
+//             rights: [
+//               'Listen'
+//               'Manage'
+//               'Send'
+//             ]
+//           }
+//           {
+//             name: 'SendListenAccess'
+//             rights: [
+//               'Listen'
+//               'Send'
+//             ]
+//           }
+//         ]        
+//         consumergroups: [
+//           {
+//             name: 'custom'
+//             userMetadata: 'customMetadata'
+//           }
+//         ]
+//       }      
+//     ]
+//   }
+// }
+
+// module eventgridnamespace 'br/public:avm/res/event-grid/namespace:0.4.2' = {
+//   name: 'eventgridnamespaceDeployment'
+//   scope: resourceGroup
+//   params: {
+//     // Required parameters
+//     name: 'egnmin001'
+//     // Non-required parameters
+//     location: location
+//   }
+// }
 // ---------------------- Modules ----------------------
 // module workspace 'br/public:avm/res/operational-insights/workspace:0.9.1' = {
 //   name: take('${timestamp}-logworkspace-${workloadName}', 64)
