@@ -83,6 +83,30 @@ module systemTopic 'br/public:avm/res/event-grid/system-topic:0.4.0' = {
     topicType: 'Microsoft.Storage.StorageAccounts'
     // Non-required parameters
     location: location
+
+    eventSubscriptions: [
+      {
+        name: 'eventgrid-webhook'
+        expirationTimeUtc: '2099-01-01T11:00:21.715Z'
+        filter: {
+          isSubjectCaseSensitive: false
+          enableAdvancedFilteringOnArrays: true
+        }
+        retryPolicy: {
+          maxDeliveryAttempts: 10
+          eventTimeToLive: '120'
+        }
+        eventDeliverySchema: 'CloudEventSchemaV1_0'
+        destination: {
+          endpointType: 'StorageQueue'
+          properties: {
+            resourceId: storageAccount.outputs.resourceId
+            queueMessageTimeToLiveInSeconds: 86400
+            
+          }
+        }
+      }
+    ]
   }
 }
 
@@ -138,6 +162,7 @@ module systemTopic 'br/public:avm/res/event-grid/system-topic:0.4.0' = {
 //     location: location
 //   }
 // }
+
 // ---------------------- Modules ----------------------
 // module workspace 'br/public:avm/res/operational-insights/workspace:0.9.1' = {
 //   name: take('${timestamp}-logworkspace-${workloadName}', 64)
