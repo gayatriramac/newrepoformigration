@@ -36,7 +36,7 @@ jobs:
           gitHubEnvironment: "innovation"
           azureLocation: ${{ vars.AZURE_LOCATION }}
           bicepFile: ${{ env.BICEP_FILE }}
-          bicepParameterFile: "orchestration/webhookpoc/innovation.main.bicepparam"
+          bicepParameterFile: "/innovation.main.bicepparam"
           description: "monitoring-infrastructure"
           AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}

@@ -48,7 +48,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
   scope: resourceGroup
   params: {
     // Required parameters
-    name: concat('${nameObject.client}${nameObject.workloadIdentifier}${workloadName}sbx')
+    name: concat('${nameObject.client}${nameObject.workloadIdentifier}${workloadName}')
     // Non-required parameters
     allowBlobPublicAccess: false
     location: location
