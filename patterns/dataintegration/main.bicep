@@ -88,21 +88,13 @@ module systemTopic 'br/public:avm/res/event-grid/system-topic:0.4.0' = {
       {
         name: 'eventgrid-webhook'
         expirationTimeUtc: '2099-01-01T11:00:21.715Z'
-        filter: {
-          isSubjectCaseSensitive: false
-          enableAdvancedFilteringOnArrays: true
-        }
-        retryPolicy: {
-          maxDeliveryAttempts: 10
-          eventTimeToLive: '120'
-        }
-        eventDeliverySchema: 'CloudEventSchemaV1_0'
+       
         destination: {
           endpointType: 'StorageQueue'
           properties: {
             resourceId: storageAccount.outputs.resourceId
             queueMessageTimeToLiveInSeconds: 86400
-            
+            queueName: 'demo'
           }
         }
       }
