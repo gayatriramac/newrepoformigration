@@ -13,7 +13,7 @@ permissions:
 
 env:
   AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
-  BICEP_FILE: "orchestration/management/main.bicep"
+  BICEP_FILE: "patterns/dataintegration/main.bicep"
   SUB_NAME: "MCAPS-Hybrid-GY"
 
 jobs:
