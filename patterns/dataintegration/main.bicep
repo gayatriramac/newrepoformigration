@@ -90,11 +90,10 @@ module systemTopic 'br/public:avm/res/event-grid/system-topic:0.4.0' = {
         expirationTimeUtc: '2099-01-01T11:00:21.715Z'
        
         destination: {
-          endpointType: 'StorageQueue'
+          endpointType: 'WebHook'
           properties: {
             resourceId: storageAccount.outputs.resourceId
-            queueMessageTimeToLiveInSeconds: 86400
-            queueName: 'demo'
+            
           }
         }
       }
