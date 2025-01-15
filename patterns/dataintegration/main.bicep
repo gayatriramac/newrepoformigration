@@ -93,8 +93,8 @@ module systemTopic 'br/public:avm/res/event-grid/system-topic:0.4.0' = {
           endpointType: 'WebHook'
           properties: {
             resourceId: storageAccount.outputs.resourceId
-           endpointUrl: 'https://www.example.com'
-            
+           endpointUrl: 'https://apicollectionv2.azure-api.net/event-webhook/api/webhook/event'
+        
           }
         }
       }
